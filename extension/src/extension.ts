@@ -40,25 +40,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Commands
   registerCommands(context);
 
-  // Register MCP server programmatically so it's available immediately
+  // Register MCP server from bundled extension path — immediately available
+  // before any workspace file copy completes (MCP-01).
   if (folder) {
-    const mcpServerScript = vscode.Uri.joinPath(folder.uri, '.gsd', 'tools', 'gsd-mcp-server.js');
-    const scriptExists = await fileExists(mcpServerScript);
-    if (scriptExists) {
-      const serverDef = new vscode.McpStdioServerDefinition(
-        'GSD Tools',
-        process.execPath,
-        [mcpServerScript.fsPath],
-        { GSD_WORKSPACE: folder.uri.fsPath },
-      );
-      context.subscriptions.push(
-        vscode.lm.registerMcpServerDefinitionProvider('gsd.mcp-servers', {
-          provideMcpServerDefinitions() {
-            return [serverDef];
-          },
-        }),
-      );
-    }
+    const bundledScript = vscode.Uri.joinPath(
+      context.extensionUri,
+      'assets', 'gsd', 'tools', 'gsd-mcp-server.js',
+    );
+    const serverDef = new vscode.McpStdioServerDefinition(
+      'GSD Tools',
+      process.execPath,
+      [bundledScript.fsPath],
+      { GSD_WORKSPACE: folder.uri.fsPath },
+    );
+    context.subscriptions.push(
+      vscode.lm.registerMcpServerDefinitionProvider('gsd.mcp-servers', {
+        provideMcpServerDefinitions() {
+          return [serverDef];
+        },
+      }),
+    );
   }
 
   // Install or update GSD tooling for each workspace folder.
