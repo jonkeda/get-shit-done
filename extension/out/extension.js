@@ -62,17 +62,18 @@ async function activate(context) {
     treeProvider.activate(context);
     // Commands
     (0, commands_1.registerCommands)(context);
-    // MCP server provider — dynamically registers the bundled GSD MCP server
-    if (typeof vscode.lm?.registerMcpServerDefinitionProvider === 'function') {
-        const mcpServerPath = vscode.Uri.joinPath(context.extensionUri, 'mcp-server', 'gsd-mcp-server.js');
-        context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('gsd-tools', {
-            provideMcpServerDefinitions: () => {
-                const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
-                return [
-                    new vscode.McpStdioServerDefinition('GSD Tools', 'node', [mcpServerPath.fsPath], { GSD_WORKSPACE: workspaceFolder }, '1.0.0'),
-                ];
-            },
-        }));
+    // Register MCP server programmatically so it's available immediately
+    if (folder) {
+        const mcpServerScript = vscode.Uri.joinPath(folder.uri, '.gsd', 'tools', 'gsd-mcp-server.js');
+        const scriptExists = await fileExists(mcpServerScript);
+        if (scriptExists) {
+            const serverDef = new vscode.McpStdioServerDefinition('GSD Tools', process.execPath, [mcpServerScript.fsPath], { GSD_WORKSPACE: folder.uri.fsPath });
+            context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('gsd.mcp-servers', {
+                provideMcpServerDefinitions() {
+                    return [serverDef];
+                },
+            }));
+        }
     }
 }
 function deactivate() {

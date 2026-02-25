@@ -15,12 +15,6 @@
     "workspaceContains:.planning/STATE.md"
   ],
   "contributes": {
-    "mcpServerDefinitionProviders": [
-      {
-        "id": "gsd-tools",
-        "label": "GSD Tools"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -63,6 +57,12 @@
       {
         "command": "gsd.switchProfile",
         "title": "GSD: Switch Model Profile"
+      }
+    ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "gsd.mcp-servers",
+        "label": "GSD Tools"
       }
     ],
     "configuration": {

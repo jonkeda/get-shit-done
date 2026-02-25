@@ -1,7 +1,6 @@
 ---
 mode: agent
 description: "List pending todos and select one to work on"
-tools: [read, execute]
 ---
 
 List all pending todos, allow selection, load full context, and route to appropriate action.

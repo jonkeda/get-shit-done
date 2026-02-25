@@ -1,7 +1,5 @@
 ---
-mode: agent
 description: "Quick model profile switch (quality/balanced/budget)"
-tools: [read, edit, execute]
 ---
 
 Switch the model profile used by GSD agents. Controls quality vs cost balance.
@@ -12,21 +10,22 @@ Switch the model profile used by GSD agents. Controls quality vs cost balance.
 
 ### 1. Validate
 
-If argument missing or not one of `quality`, `balanced`, `budget`:
-```
-ERROR: Invalid profile "{argument}"
-Valid profiles: quality, balanced, budget
-Usage: /gsd-set-profile <profile>
-```
-Exit.
+Extract the profile name from the arguments. It must be exactly one of these three values: `quality`, `balanced`, `budget`.
+
+- `quality` → valid, proceed to step 2
+- `balanced` → valid, proceed to step 2
+- `budget` → valid, proceed to step 2
+- anything else or missing → respond with "ERROR: Invalid profile. Valid profiles: quality, balanced, budget. Usage: /gsd-set-profile <profile>" and stop
 
 ### 2. Update Config
 
-Call `gsd_config_set` MCP tool with key `model_profile` and the selected profile value.
+Call the `gsd_config_set` MCP tool with key `model_profile` and the validated profile value.
 
 If `.planning/config.json` doesn't exist, it will be created with defaults first.
 
 ### 3. Confirm
+
+Display this confirmation (replace {profile} with the actual value):
 
 ```
 ✓ Model profile set to: {profile}

@@ -1,8 +1,11 @@
 ---
 description: "Verifies cross-phase integration and E2E flows. Checks that phases connect properly and user workflows complete end-to-end."
-tools: [read, execute, search]
 model: [claude-sonnet-4.6, gpt-4.1]
 user-invocable: false
+tools:
+  - gsd_find_phase
+  - gsd_roadmap_analyze
+  - gsd_state_load
 handoffs: []
 ---
 

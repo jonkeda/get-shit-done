@@ -1,7 +1,6 @@
 ---
 mode: agent
 description: "Remove future phase and renumber subsequent phases"
-tools: [read, edit, execute]
 ---
 
 Remove an unstarted future phase from the roadmap, delete its directory, renumber all subsequent phases, and commit. The git commit serves as the historical record.

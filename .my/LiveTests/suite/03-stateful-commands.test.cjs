@@ -16,6 +16,7 @@
 'use strict';
 
 const assert = require('assert');
+const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 const {
@@ -36,8 +37,11 @@ const {
 describe('Stateful Chat Commands', function () {
 
   beforeEach(async function () {
-    await clearChat();
+    // Cancel any pending request, then start fresh
+    try { await vscode.commands.executeCommand('workbench.action.chat.cancel'); } catch {}
     await sleep(1000);
+    try { await vscode.commands.executeCommand('workbench.action.chat.newChat'); } catch { await clearChat(); }
+    await sleep(2000);
   });
 
   describe('/gsd-set-profile', function () {

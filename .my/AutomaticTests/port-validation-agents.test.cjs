@@ -44,11 +44,12 @@ describe('Agent Integrity', () => {
     }
   });
 
-  it('no extra unexpected agent files', () => {
-    const actual = fs.readdirSync(AGENTS_DIR).filter(f => f.endsWith('.agent.md'));
+  it('no extra unexpected GSD agent files', () => {
+    const actual = fs.readdirSync(AGENTS_DIR)
+      .filter(f => f.endsWith('.agent.md') && f.startsWith('gsd-'));
     const expected = EXPECTED_AGENTS.map(n => `${n}.agent.md`);
     const unexpected = actual.filter(f => !expected.includes(f));
-    assert.deepStrictEqual(unexpected, [], `Unexpected agents: ${unexpected.join(', ')}`);
+    assert.deepStrictEqual(unexpected, [], `Unexpected GSD agents: ${unexpected.join(', ')}`);
   });
 
   for (const name of EXPECTED_AGENTS) {

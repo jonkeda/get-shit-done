@@ -59,19 +59,46 @@ GSD provides MCP tools prefixed with `gsd_`. Use these for all state management,
 
 ## GSD Commands
 Use `/gsd-{command}` to invoke GSD prompts:
-- `/gsd-quick "description"` — Quick task execution
-- `/gsd-help` — Show all commands
-- `/gsd-progress` — Check project status
-- `/gsd-pause-work` — Save context for later
-- `/gsd-resume-work` — Resume from previous session
-- `/gsd-settings` — Configure GSD workflow
-- `/gsd-add-todo "description"` — Capture task for later
-- `/gsd-check-todos` — List pending todos
+
+### Project Lifecycle
+- `/gsd-new-project` — Initialize a new GSD project
+- `/gsd-map-codebase` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-new-milestone` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-discuss-phase N` — Gather preferences and decisions for phase N
+- `/gsd-plan-phase N` — Research and plan phase N
+- `/gsd-execute-phase N` — Execute phase N plans with atomic commits
+- `/gsd-verify-work N` — Interactive UAT verification for phase N
+- `/gsd-research-phase N` — Deep standalone research for phase N
+
+### Phase Management
 - `/gsd-add-phase "description"` — Append phase to roadmap
 - `/gsd-remove-phase N` — Remove a future phase
 - `/gsd-insert-phase N "description"` — Insert urgent work
+- `/gsd-list-phase-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-add-todo "description"` — Capture task for later
+- `/gsd-check-todos` — List pending todos
+
+### Milestone Completion
+- `/gsd-audit-milestone` — Audit milestone completeness and integration
+- `/gsd-complete-milestone` — Archive and complete current milestone
+- `/gsd-plan-milestone-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-pause-work` — Save context for later
+- `/gsd-resume-work` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
 - `/gsd-set-profile [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
 - `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
 
 ## Context Management
 If the conversation is getting long, consider using `/gsd-pause-work` to save state and start a fresh session with `/gsd-resume-work`.

@@ -14,6 +14,8 @@ const {
   getGsdCommands,
   fileExists,
   workspaceRoot,
+  sendChatMessage,
+  clearChat,
   sleep,
 } = require('./helpers.cjs');
 
@@ -66,5 +68,18 @@ describe('Extension Activation', function () {
     // the extension activated without errors (which sets the key)
     const ext = vscode.extensions.getExtension('gsd.gsd-copilot');
     assert.ok(ext?.isActive, 'Extension should be active (which sets context keys)');
+  });
+
+  it('should warm up MCP server (may require trust approval)', async function () {
+    // Send a lightweight command that triggers MCP server start.
+    // If this is the first run, VS Code will show a trust prompt —
+    // the tester should click Allow. The generous timeout gives time
+    // for that interaction. Subsequent suites will then have a warm MCP.
+    this.timeout(120_000);
+    await sendChatMessage('/gsd-progress');
+    // Wait long enough for MCP trust prompt + server startup
+    await sleep(30_000);
+    await clearChat();
+    await sleep(2000);
   });
 });

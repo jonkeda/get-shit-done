@@ -32,7 +32,12 @@ function workspaceRoot() {
  * @returns {Promise<void>}
  */
 async function sendChatMessage(query) {
-  await vscode.commands.executeCommand('workbench.action.chat.open', { query });
+  // Open in agent mode so MCP tools are permitted (non-agent modes only
+  // allow internal read/search/web tools, filtering out MCP tools).
+  await vscode.commands.executeCommand('workbench.action.chat.open', {
+    query,
+    mode: 'agent',
+  });
   // Small delay to let the chat panel open and begin processing
   await sleep(2000);
 }
@@ -249,6 +254,76 @@ function deleteWorkspaceFile(relativePath) {
   }
 }
 
+/**
+ * Wait for a file's content to NOT match a pattern.
+ * Useful for verifying that content was removed (e.g. phase deletion).
+ *
+ * @param {string} relativePath - Path relative to workspace root
+ * @param {RegExp} pattern - Pattern that should NOT match
+ * @param {number} [timeoutMs=120000] - Timeout in ms
+ * @returns {Promise<string>} File contents when pattern no longer matches
+ */
+async function waitForFileContentAbsent(relativePath, pattern, timeoutMs = 120_000) {
+  const fullPath = path.join(workspaceRoot(), relativePath);
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    if (fs.existsSync(fullPath)) {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (!pattern.test(content)) {
+        return content;
+      }
+    }
+    await sleep(1000);
+  }
+  throw new Error(`Timeout: file ${relativePath} still matches ${pattern} after ${timeoutMs}ms`);
+}
+
+/**
+ * Wait for the .planning/ directory to become quiescent (no file changes).
+ * Sends a chat message and waits until no files in .planning/ have been
+ * modified for `quietMs` consecutive milliseconds.
+ *
+ * @param {number} [quietMs=8000] - How long files must be unchanged
+ * @param {number} [timeoutMs=180000] - Overall timeout
+ * @returns {Promise<void>}
+ */
+async function waitForChatIdle(quietMs = 8000, timeoutMs = 180_000) {
+  const planningDir = path.join(workspaceRoot(), '.planning');
+  const deadline = Date.now() + timeoutMs;
+
+  function getLatestMtime(dir) {
+    let latest = 0;
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          latest = Math.max(latest, getLatestMtime(full));
+        } else {
+          latest = Math.max(latest, fs.statSync(full).mtimeMs);
+        }
+      }
+    } catch { /* directory may not exist yet */ }
+    return latest;
+  }
+
+  // Wait at least 3s for the request to start producing changes
+  await sleep(3000);
+
+  let lastChange = getLatestMtime(planningDir);
+  while (Date.now() < deadline) {
+    await sleep(2000);
+    const current = getLatestMtime(planningDir);
+    if (current > lastChange) {
+      lastChange = current;
+    } else if (Date.now() - lastChange > quietMs) {
+      // No changes for quietMs — chat is likely done
+      return;
+    }
+  }
+  throw new Error(`Timeout: .planning/ still changing after ${timeoutMs}ms`);
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -258,6 +333,7 @@ module.exports = {
   sendChatMessage,
   waitForFile,
   waitForFileContent,
+  waitForFileContentAbsent,
   waitForNewFileInDir,
   waitForStateChange,
   readWorkspaceFile,
@@ -266,6 +342,7 @@ module.exports = {
   isExtensionActive,
   getGsdCommands,
   waitForChatOpen,
+  waitForChatIdle,
   clearChat,
   writeWorkspaceFile,
   deleteWorkspaceFile,

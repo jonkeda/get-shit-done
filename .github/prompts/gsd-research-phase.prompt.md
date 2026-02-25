@@ -1,7 +1,6 @@
 ---
 mode: agent
 description: "Deep ecosystem research for a phase (standalone)"
-tools: [read, search, web, execute, agent]
 ---
 
 Research how to implement a phase. Standalone research command — for most workflows, use `/gsd-plan-phase` which integrates research automatically.

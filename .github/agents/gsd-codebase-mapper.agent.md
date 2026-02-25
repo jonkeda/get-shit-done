@@ -1,8 +1,9 @@
 ---
 description: "Explores codebase and writes structured analysis documents. Spawned by map-codebase with a focus area (tech, arch, quality, concerns). Writes documents directly to reduce orchestrator context load."
-tools: [read, execute, search, createFile]
 model: [claude-sonnet-4.6, gpt-4.1]
 user-invocable: false
+tools:
+  - gsd_commit
 handoffs: []
 ---
 

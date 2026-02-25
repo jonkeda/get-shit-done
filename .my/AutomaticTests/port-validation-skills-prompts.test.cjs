@@ -24,7 +24,8 @@ const EXPECTED_SKILLS = [
   'gsd-verify-work',
 ];
 
-const EXPECTED_PROMPTS = [
+// Inline prompts (standalone logic, no skill routing)
+const INLINE_PROMPTS = [
   'gsd-add-phase',
   'gsd-add-todo',
   'gsd-check-todos',
@@ -43,6 +44,23 @@ const EXPECTED_PROMPTS = [
   'gsd-settings',
   'gsd-update',
 ];
+
+// Skill-routing prompts (thin wrappers that invoke a skill)
+const SKILL_ROUTING_PROMPTS = [
+  'gsd-audit-milestone',
+  'gsd-complete-milestone',
+  'gsd-debug',
+  'gsd-discuss-phase',
+  'gsd-execute-phase',
+  'gsd-map-codebase',
+  'gsd-new-milestone',
+  'gsd-new-project',
+  'gsd-plan-phase',
+  'gsd-quick',
+  'gsd-verify-work',
+];
+
+const EXPECTED_PROMPTS = [...INLINE_PROMPTS, ...SKILL_ROUTING_PROMPTS];
 
 const STALE_PATTERNS = [
   /gsd-tools\.cjs/,
@@ -96,7 +114,7 @@ describe('Skill Integrity', () => {
 
 describe('Prompt Integrity', () => {
 
-  it('all 17 prompt files exist', () => {
+  it('all 28 GSD prompt files exist', () => {
     for (const name of EXPECTED_PROMPTS) {
       const promptPath = path.join(PROMPTS_DIR, `${name}.prompt.md`);
       assert.ok(fs.existsSync(promptPath), `Missing prompt: ${name}.prompt.md`);
@@ -123,12 +141,6 @@ describe('Prompt Integrity', () => {
 
 describe('Command Coverage', () => {
   // Every source command should have either a prompt or a skill
-  const SKILL_COMMANDS = [
-    'debug', 'discuss-phase', 'execute-phase', 'map-codebase',
-    'audit-milestone', 'complete-milestone', 'new-milestone',
-    'new-project', 'plan-phase', 'quick', 'verify-work',
-  ];
-
   const PROMPT_COMMANDS = EXPECTED_PROMPTS.map(p => p.replace('gsd-', ''));
 
   const EXCLUDED_COMMANDS = ['add-tests', 'join-discord', 'reapply-patches'];
@@ -139,7 +151,7 @@ describe('Command Coverage', () => {
       .filter(f => f.endsWith('.md') && !f.endsWith('.bak'))
       .map(f => f.replace('.md', ''));
 
-    const covered = new Set([...SKILL_COMMANDS, ...PROMPT_COMMANDS, ...EXCLUDED_COMMANDS]);
+    const covered = new Set([...PROMPT_COMMANDS, ...EXCLUDED_COMMANDS]);
 
     const uncovered = sourceCommands.filter(cmd => !covered.has(cmd));
     assert.deepStrictEqual(uncovered, [], `Uncovered commands: ${uncovered.join(', ')}`);

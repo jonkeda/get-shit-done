@@ -1,7 +1,6 @@
 ---
 mode: agent
 description: "Append new phase to roadmap"
-tools: [read, edit, execute]
 ---
 
 Add a new integer phase to the end of the current milestone in the roadmap.

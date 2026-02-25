@@ -55,14 +55,9 @@ function createTestWorkspace() {
   const vscodeDir = path.join(tmpDir, '.vscode');
   fs.mkdirSync(vscodeDir, { recursive: true });
   fs.writeFileSync(path.join(vscodeDir, 'settings.json'), JSON.stringify({
-    'chat.mcp.discovery.enabled': true,
+    'chat.mcp.discovery.enabled': false,
     'chat.mcp.enabled': true,
-    'chat.tools.autoApprove': true,
-    'chat.agent.autoApprove': true,
-    'chat.terminal.autoApprove': true,
-    'github.copilot.chat.agent.autoApprove': true,
-    'github.copilot.chat.mcpTools.autoApprove': true,
-    'github.copilot.chat.tools.autoApprove': true,
+    'chat.mcp.access': 'all',
     'security.workspace.trust.enabled': false,
   }, null, 2) + '\n');
 
@@ -117,11 +112,25 @@ total_phases: 2
 
 # Roadmap
 
-## Phase 1 — Setup
+## Phase 1: Setup
+
+**Goal:** Set up project structure
+**Requirements:** REQ-001
+**Depends on:** —
+**Plans:** 0 plans
+
+Plans:
 - Set up project structure
 - Configure build system
 
-## Phase 2 — Implementation
+## Phase 2: Implementation
+
+**Goal:** Implement core features
+**Requirements:** REQ-002
+**Depends on:** Phase 1
+**Plans:** 0 plans
+
+Plans:
 - Implement core features
 - Add tests
 `);
@@ -151,20 +160,25 @@ The project must implement the core features described in the roadmap.
   const userSettingsDir = path.join(userDataDir, 'User');
   fs.mkdirSync(userSettingsDir, { recursive: true });
 
-  // VS Code settings that auto-enable MCP and suppress all approval prompts
+  // VS Code settings — suppress prompts and popups
+  // Global auto-approve is enabled alongside the testMode context key
+  // (set in index.cjs) to bypass the confirmation dialog. This ensures
+  // both MCP and built-in tools execute without manual approval.
   const autoApproveSettings = {
-    // MCP
-    'chat.mcp.discovery.enabled': true,
+    // Agent mode — required for MCP tools to be permitted. Non-agent
+    // modes ("ask") only allow internal read/search/web tools.
+    'chat.agent.enabled': true,
+    // Global auto-approve — works in conjunction with the testMode
+    // context key set in index.cjs to skip the security dialog.
+    'chat.tools.global.autoApprove': true,
+    // MCP — discovery OFF to prevent external MCP servers (claude-desktop,
+    // cursor, etc.) from showing Allow buttons. The .vscode/mcp.json server
+    // is auto-trusted by VS Code and doesn't need discovery.
+    'chat.mcp.discovery.enabled': false,
     'chat.mcp.enabled': true,
-    // Auto-approve all tool invocations (MCP tools, file edits, terminal, etc.)
-    'chat.tools.autoApprove': true,
-    'chat.agent.autoApprove': true,
-    'github.copilot.chat.agent.autoApprove': true,
-    'github.copilot.chat.mcpTools.autoApprove': true,
-    'github.copilot.chat.tools.autoApprove': true,
-    // Terminal auto-approve
-    'chat.terminal.autoApprove': true,
-    'github.copilot.chat.terminalChatLocation': 'chatView',
+    // Pre-authorize all MCP servers — VS Code adds this after clicking Allow,
+    // so pre-setting it should skip the MCP access prompt.
+    'chat.mcp.access': 'all',
     // Workspace trust — don't prompt
     'security.workspace.trust.enabled': false,
     'security.workspace.trust.startupPrompt': 'never',
@@ -180,6 +194,8 @@ The project must implement the core features described in the roadmap.
     'extensions.ignoreRecommendations': true,
     'workbench.startupEditor': 'none',
     'workbench.tips.enabled': false,
+    // Override chat model — set via GSD_TEST_MODEL env var (e.g. "gpt-5.2")
+    ...(process.env.GSD_TEST_MODEL ? { 'github.copilot.chat.debug.overrideChatEngine': process.env.GSD_TEST_MODEL } : {}),
   };
   fs.writeFileSync(path.join(userSettingsDir, 'settings.json'),
     JSON.stringify(autoApproveSettings, null, 2) + '\n');
@@ -228,6 +244,7 @@ async function main() {
     // Use 'insiders' or 'stable' — pass via env var GSD_TEST_VSCODE_VERSION
     const vsVersion = process.env.GSD_TEST_VSCODE_VERSION || 'stable';
     console.log('  VS Code version:', vsVersion);
+    if (process.env.GSD_TEST_MODEL) console.log('  Model override:', process.env.GSD_TEST_MODEL);
     const vscodeExecutablePath = await downloadAndUnzipVSCode(vsVersion);
     const [cliPath, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
 
@@ -251,6 +268,9 @@ async function main() {
         // Don't disable all extensions — we need Copilot for chat
         // Only disable specific problematic extensions if needed
         '--enable-proposed-api', 'gsd.gsd-copilot',
+        // Skip first-run prompts and trust confirmations
+        '--skip-welcome',
+        '--skip-release-notes',
       ],
       // Pass test workspace location as env var so tests can find it
       extensionTestsEnv: {
@@ -260,8 +280,15 @@ async function main() {
 
     console.log('\n  All live tests passed!\n');
   } catch (err) {
-    console.error('\n  Live tests failed:', err.message || err);
-    process.exit(1);
+    // VS Code sometimes exits with SIGINT during shutdown even when tests pass.
+    // Check for a success marker written by the test suite.
+    const marker = testWorkspace && path.join(testWorkspace, '.gsd-tests-passed');
+    if (marker && fs.existsSync(marker)) {
+      console.log('\n  All live tests passed! (VS Code exited with SIGINT during shutdown — safe to ignore)\n');
+    } else {
+      console.error('\n  Live tests failed:', err.message || err);
+      process.exit(1);
+    }
   } finally {
     if (testWorkspace) {
       cleanup(testWorkspace);

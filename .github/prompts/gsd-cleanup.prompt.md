@@ -1,7 +1,6 @@
 ---
 mode: agent
 description: "Clean up completed debug sessions and archived planning artifacts"
-tools: [read, edit, execute]
 ---
 
 Archive phase directories from completed milestones into `.planning/milestones/v{X.Y}-phases/`. Use when `.planning/phases/` has accumulated directories from past milestones.

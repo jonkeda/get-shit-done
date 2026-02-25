@@ -1,7 +1,6 @@
 ---
 mode: agent
 description: "Create phases to close gaps identified by milestone audit"
-tools: [read, edit, execute]
 ---
 
 Create all phases necessary to close gaps identified by `/gsd-audit-milestone`. One command creates all fix phases — no manual `/gsd-add-phase` per gap.

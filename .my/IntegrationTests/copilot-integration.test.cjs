@@ -23,7 +23,6 @@ const PROMPTS_DIR = path.join(GITHUB_DIR, 'prompts');
 const INSTRUCTIONS_DIR = path.join(GITHUB_DIR, 'instructions');
 const GSD_DIR = path.join(ROOT, '.gsd');
 const MCP_SERVER = path.join(GSD_DIR, 'tools', 'gsd-mcp-server.js');
-const MCP_CONFIG = path.join(ROOT, '.vscode', 'mcp.json');
 const COPILOT_INSTRUCTIONS = path.join(GITHUB_DIR, 'copilot-instructions.md');
 
 // --- Helpers ---
@@ -89,7 +88,7 @@ const VSCODE_TOOLS = new Set([
 // ===================================================================
 
 describe('Agent Discovery', () => {
-  const agentFiles = listFiles(AGENTS_DIR, '.agent.md');
+  const agentFiles = listFiles(AGENTS_DIR, '.agent.md').filter(f => f.startsWith('gsd-'));
   
   it('agents directory exists under .github/', () => {
     assert.ok(fs.existsSync(AGENTS_DIR), '.github/agents/ must exist');
@@ -103,11 +102,11 @@ describe('Agent Discovery', () => {
     }
   });
 
-  it('expected agent count is 11', () => {
-    assert.equal(agentFiles.length, 11, `Expected 11 agents, found ${agentFiles.length}`);
+  it('expected GSD agent count is 11', () => {
+    assert.equal(agentFiles.length, 11, `Expected 11 GSD agents, found ${agentFiles.length}`);
   });
 
-  it('all agent files follow gsd-{name}.agent.md naming', () => {
+  it('all GSD agent files follow gsd-{name}.agent.md naming', () => {
     for (const f of agentFiles) {
       assert.match(f, /^gsd-[\w-]+\.agent\.md$/, `${f} must match gsd-*.agent.md`);
     }
@@ -193,7 +192,7 @@ describe('Agent Discovery', () => {
 // ===================================================================
 
 describe('Agent Cross-References', () => {
-  const agentFiles = listFiles(AGENTS_DIR, '.agent.md');
+  const agentFiles = listFiles(AGENTS_DIR, '.agent.md').filter(f => f.startsWith('gsd-'));
   const agentNames = agentFiles.map(f => f.replace('.agent.md', ''));
   const mcpToolNames = getMcpToolNames();
 
@@ -417,7 +416,7 @@ describe('Skill Discovery', () => {
 
 describe('Skill Cross-References', () => {
   const skillDirs = listDirs(SKILLS_DIR);
-  const agentFiles = listFiles(AGENTS_DIR, '.agent.md');
+  const agentFiles = listFiles(AGENTS_DIR, '.agent.md').filter(f => f.startsWith('gsd-'));
   const agentNames = agentFiles.map(f => f.replace('.agent.md', ''));
   const mcpToolNames = getMcpToolNames();
 
@@ -495,14 +494,14 @@ describe('Skill Cross-References', () => {
 // ===================================================================
 
 describe('Prompt Discovery', () => {
-  const promptFiles = listFiles(PROMPTS_DIR, '.prompt.md');
+  const promptFiles = listFiles(PROMPTS_DIR, '.prompt.md').filter(f => f.startsWith('gsd-'));
 
   it('prompts directory exists under .github/', () => {
     assert.ok(fs.existsSync(PROMPTS_DIR), '.github/prompts/ must exist');
   });
 
-  it('expected prompt count is 17', () => {
-    assert.equal(promptFiles.length, 17, `Expected 17 prompts, got ${promptFiles.length}`);
+  it('expected GSD prompt count is 28', () => {
+    assert.equal(promptFiles.length, 28, `Expected 28 GSD prompts, got ${promptFiles.length}`);
   });
 
   it('all prompt files use .prompt.md extension', () => {
@@ -512,7 +511,7 @@ describe('Prompt Discovery', () => {
     }
   });
 
-  it('all prompt files follow gsd-{name}.prompt.md naming', () => {
+  it('all GSD prompt files follow gsd-{name}.prompt.md naming', () => {
     for (const f of promptFiles) {
       assert.match(f, /^gsd-[\w-]+\.prompt\.md$/, `${f} must match gsd-*.prompt.md`);
     }
@@ -595,14 +594,14 @@ describe('Prompt Cross-References', () => {
 // ===================================================================
 
 describe('Instruction Discovery', () => {
-  const instrFiles = listFiles(INSTRUCTIONS_DIR, '.instructions.md');
+  const instrFiles = listFiles(INSTRUCTIONS_DIR, '.instructions.md').filter(f => f.startsWith('gsd-') || f === 'planning-docs.instructions.md');
 
   it('instructions directory exists under .github/', () => {
     assert.ok(fs.existsSync(INSTRUCTIONS_DIR), '.github/instructions/ must exist');
   });
 
-  it('expected instruction count is 6', () => {
-    assert.equal(instrFiles.length, 6, `Expected 6 instructions, got ${instrFiles.length}`);
+  it('expected GSD instruction count is 6', () => {
+    assert.equal(instrFiles.length, 6, `Expected 6 GSD instructions, got ${instrFiles.length}`);
   });
 
   it('all instruction files use .instructions.md extension', () => {
@@ -662,47 +661,8 @@ describe('Instruction Discovery', () => {
 // ===================================================================
 
 describe('MCP Configuration', () => {
-  it('.vscode/mcp.json exists', () => {
-    assert.ok(fs.existsSync(MCP_CONFIG), '.vscode/mcp.json must exist');
-  });
-
-  it('mcp.json is valid JSON', () => {
-    const content = fs.readFileSync(MCP_CONFIG, 'utf8');
-    assert.doesNotThrow(() => JSON.parse(content), 'mcp.json must be valid JSON');
-  });
-
-  it('mcp.json has servers.gsd-tools entry', () => {
-    const config = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
-    assert.ok(config.servers, 'must have servers key');
-    assert.ok(config.servers['gsd-tools'], 'must have gsd-tools server');
-  });
-
-  it('gsd-tools server uses stdio transport', () => {
-    const config = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
-    assert.equal(config.servers['gsd-tools'].type, 'stdio');
-  });
-
-  it('gsd-tools server command is node', () => {
-    const config = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
-    assert.equal(config.servers['gsd-tools'].command, 'node');
-  });
-
-  it('gsd-tools server args point to existing server file', () => {
-    const config = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
-    const args = config.servers['gsd-tools'].args;
-    assert.ok(Array.isArray(args), 'args must be an array');
-    assert.ok(args.length > 0, 'args must have at least one entry');
-    // Replace ${workspaceFolder} with actual root
-    const serverPath = args[0].replace('${workspaceFolder}', ROOT);
-    assert.ok(fs.existsSync(serverPath), `Server file must exist: ${serverPath}`);
-  });
-
-  it('gsd-tools server sets GSD_WORKSPACE env var', () => {
-    const config = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
-    const env = config.servers['gsd-tools'].env;
-    assert.ok(env, 'must have env section');
-    assert.ok(env.GSD_WORKSPACE, 'must set GSD_WORKSPACE');
-    assert.equal(env.GSD_WORKSPACE, '${workspaceFolder}');
+  it('MCP server file exists', () => {
+    assert.ok(fs.existsSync(MCP_SERVER), `.gsd/tools/gsd-mcp-server.js must exist`);
   });
 
   it('MCP server file has valid Node.js syntax', () => {
@@ -712,6 +672,26 @@ describe('MCP Configuration', () => {
       'MCP server must have valid syntax'
     );
   });
+
+  it('extension registers MCP server via McpStdioServerDefinition', () => {
+    const extTs = path.join(ROOT, 'extension', 'src', 'extension.ts');
+    const content = fs.readFileSync(extTs, 'utf8');
+    assert.ok(content.includes('McpStdioServerDefinition'), 'extension.ts must use McpStdioServerDefinition');
+    assert.ok(content.includes('gsd-mcp-server.js'), 'extension.ts must reference MCP server script');
+  });
+
+  it('extension package.json declares mcpServerDefinitionProviders', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'extension', 'package.json'), 'utf8'));
+    const providers = pkg.contributes?.mcpServerDefinitionProviders;
+    assert.ok(Array.isArray(providers), 'must declare mcpServerDefinitionProviders');
+    assert.ok(providers.length > 0, 'must have at least one MCP provider');
+  });
+
+  it('copilot-install.js can generate .vscode/mcp.json as fallback', () => {
+    const installer = fs.readFileSync(path.join(ROOT, 'bin', 'copilot-install.js'), 'utf8');
+    assert.ok(installer.includes('mcp.json'), 'copilot-install.js must handle mcp.json');
+    assert.ok(installer.includes('gsd-tools'), 'copilot-install.js must configure gsd-tools server');
+  });
 });
 
 // ===================================================================
@@ -719,7 +699,7 @@ describe('MCP Configuration', () => {
 // ===================================================================
 
 describe('Command-to-Component Routing', () => {
-  const promptFiles = listFiles(PROMPTS_DIR, '.prompt.md');
+  const promptFiles = listFiles(PROMPTS_DIR, '.prompt.md').filter(f => f.startsWith('gsd-'));
   const promptNames = new Set(promptFiles.map(f => f.replace('.prompt.md', '')));
   const skillDirs = new Set(listDirs(SKILLS_DIR));
 
@@ -756,14 +736,22 @@ describe('Command-to-Component Routing', () => {
     }
   });
 
-  it('no prompt name collides with a skill name', () => {
+  it('skill-routing prompts share names with their target skills', () => {
+    // Skill-routing prompts intentionally share names with skills.
+    // These are thin wrappers that invoke a skill (e.g. gsd-debug.prompt.md routes to gsd-debug skill).
+    const SKILL_ROUTING_PROMPTS = new Set([
+      'gsd-audit-milestone', 'gsd-complete-milestone', 'gsd-debug',
+      'gsd-discuss-phase', 'gsd-execute-phase', 'gsd-map-codebase',
+      'gsd-new-milestone', 'gsd-new-project', 'gsd-plan-phase',
+      'gsd-quick', 'gsd-verify-work',
+    ]);
     const collisions = [];
     for (const name of promptNames) {
-      if (skillDirs.has(name)) collisions.push(name);
+      if (skillDirs.has(name) && !SKILL_ROUTING_PROMPTS.has(name)) collisions.push(name);
     }
     assert.deepEqual(
       collisions, [],
-      `Prompt-skill name collisions: ${collisions.join(', ')}. Skills take priority, prompt would be shadowed.`
+      `Non-routing prompt-skill name collisions: ${collisions.join(', ')}. Skills take priority, prompt would be shadowed.`
     );
   });
 
@@ -826,9 +814,9 @@ describe('MCP Tool Coverage', () => {
     assert.equal(mcpToolSet.size, mcpToolNames.length, 'Duplicate tool names detected');
   });
 
-  it('every MCP tool referenced in agent frontmatter exists in server', () => {
+  it('every MCP tool referenced in GSD agent frontmatter exists in server', () => {
     // Only check frontmatter tools: field — body text may mention tools as documentation
-    const agentFiles = listFiles(AGENTS_DIR, '.agent.md');
+    const agentFiles = listFiles(AGENTS_DIR, '.agent.md').filter(f => f.startsWith('gsd-'));
     for (const f of agentFiles) {
       const content = fs.readFileSync(path.join(AGENTS_DIR, f), 'utf8');
       const raw = (content.match(/^---\s*\n([\s\S]+?)\n---/)?.[1] || '').replace(/\r/g, '');
