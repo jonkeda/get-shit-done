@@ -132,3 +132,90 @@ function writeVersion(workspacePath: string, version: string): void {
 function getExtensionVersion(context: vscode.ExtensionContext): string {
   return (context.extension.packageJSON as { version: string }).version;
 }
+
+// ── .github content installation ─────────────────────────────────────────────
+
+function installAgents(assetsGithub: string, workspacePath: string): number {
+  return copyMatchingFiles(
+    path.join(assetsGithub, 'agents'),
+    path.join(workspacePath, '.github', 'agents'),
+    'gsd-',
+    '.agent.md',
+  );
+}
+
+function installSkills(assetsGithub: string, workspacePath: string): number {
+  const skillsSrc = path.join(assetsGithub, 'skills');
+  const skillsDest = path.join(workspacePath, '.github', 'skills');
+  if (!fs.existsSync(skillsSrc)) {
+    return 0;
+  }
+  const entries = fs.readdirSync(skillsSrc, { withFileTypes: true });
+  let count = 0;
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !entry.name.startsWith('gsd-')) {
+      continue;
+    }
+    count += copyDirRecursive(
+      path.join(skillsSrc, entry.name),
+      path.join(skillsDest, entry.name),
+    );
+  }
+  return count;
+}
+
+function installPrompts(assetsGithub: string, workspacePath: string): number {
+  return copyMatchingFiles(
+    path.join(assetsGithub, 'prompts'),
+    path.join(workspacePath, '.github', 'prompts'),
+    'gsd-',
+    '.prompt.md',
+  );
+}
+
+function installInstructions(assetsGithub: string, workspacePath: string): number {
+  return copyMatchingFiles(
+    path.join(assetsGithub, 'instructions'),
+    path.join(workspacePath, '.github', 'instructions'),
+    'gsd-',
+    '.instructions.md',
+  );
+}
+
+/**
+ * Install all .github agent customisation files:
+ * agents, skills, prompts, and instructions.
+ * Returns total files written.
+ */
+function installGithubFiles(assetsGithub: string, workspacePath: string): number {
+  let count = 0;
+  count += installAgents(assetsGithub, workspacePath);
+  count += installSkills(assetsGithub, workspacePath);
+  count += installPrompts(assetsGithub, workspacePath);
+  count += installInstructions(assetsGithub, workspacePath);
+  return count;
+}
+
+// ── .gsd content installation ────────────────────────────────────────────────
+
+/**
+ * Install the GSD tools, references, and templates into the workspace
+ * `.gsd/` directory.
+ * Returns total files written.
+ */
+function installGsdContent(assetsGsd: string, workspacePath: string): number {
+  let count = 0;
+  count += copyDirRecursive(
+    path.join(assetsGsd, 'tools'),
+    path.join(workspacePath, '.gsd', 'tools'),
+  );
+  count += copyDirRecursive(
+    path.join(assetsGsd, 'references'),
+    path.join(workspacePath, '.gsd', 'references'),
+  );
+  count += copyDirRecursive(
+    path.join(assetsGsd, 'templates'),
+    path.join(workspacePath, '.gsd', 'templates'),
+  );
+  return count;
+}
