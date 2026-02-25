@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "gsd-tools": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/.gsd/tools/gsd-mcp-server.js"],
+      "env": {
+        "GSD_WORKSPACE": "${workspaceFolder}"
+      }
+    }
+  }
+}

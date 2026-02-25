@@ -204,8 +204,13 @@ None
 `
     );
 
+    const summaryPath = path.join(tmpDir, 'dec-summary.txt');
+    const rationalePath = path.join(tmpDir, 'dec-rationale.txt');
+    fs.writeFileSync(summaryPath, 'Benchmark prices moved from $0.50 to $2.00 to $5.00\n');
+    fs.writeFileSync(rationalePath, 'track cost growth\n');
+
     const result = runGsdTools(
-      "state add-decision --phase 11-01 --summary 'Benchmark prices moved from $0.50 to $2.00 to $5.00' --rationale 'track cost growth'",
+      `state add-decision --phase 11-01 --summary-file "${summaryPath}" --rationale-file "${rationalePath}"`,
       tmpDir
     );
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -233,7 +238,10 @@ None
 `
     );
 
-    const result = runGsdTools("state add-blocker --text 'Waiting on vendor quote $1.00 before approval'", tmpDir);
+    const blockerPath = path.join(tmpDir, 'blk-text.txt');
+    fs.writeFileSync(blockerPath, 'Waiting on vendor quote $1.00 before approval\n');
+
+    const result = runGsdTools(`state add-blocker --text-file "${blockerPath}"`, tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const state = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');

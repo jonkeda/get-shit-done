@@ -8,8 +8,17 @@ commands.html
 # Local test installs
 .claude/
 
+# VS Code test downloads (large binaries)
+.vscode-test/
+
+# GSD runtime (installed per-workspace, not user-editable)
+.gsd/
+
 # Build artifacts (committed to npm, not git)
 hooks/dist/
+extension/out/
+extension/mcp-server/
+extension/*.vsix
 
 # Animation assets
 animation/

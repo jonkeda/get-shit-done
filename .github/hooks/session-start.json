@@ -1,0 +1,4 @@
+{
+  "event": "SessionStart",
+  "command": "node ${workspaceFolder}/.gsd/hooks/check-update.js"
+}

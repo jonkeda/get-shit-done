@@ -1,0 +1,112 @@
+{
+  "name": "gsd-copilot",
+  "displayName": "GSD - Get Shit Done",
+  "description": "Status bar, tree view, and command palette integration for GSD workflow",
+  "version": "0.1.4",
+  "publisher": "gsd",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "workspaceContains:.planning/STATE.md"
+  ],
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "gsd-tools",
+        "label": "GSD Tools"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gsd-explorer",
+          "title": "GSD",
+          "icon": "$(rocket)"
+        }
+      ]
+    },
+    "views": {
+      "gsd-explorer": [
+        {
+          "id": "gsdProjectView",
+          "name": "Project",
+          "when": "gsd:hasPlanning"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "gsd.newProject",
+        "title": "GSD: New Project"
+      },
+      {
+        "command": "gsd.planPhase",
+        "title": "GSD: Plan Phase"
+      },
+      {
+        "command": "gsd.executePhase",
+        "title": "GSD: Execute Phase"
+      },
+      {
+        "command": "gsd.quick",
+        "title": "GSD: Quick Task"
+      },
+      {
+        "command": "gsd.progress",
+        "title": "GSD: Show Progress"
+      },
+      {
+        "command": "gsd.switchProfile",
+        "title": "GSD: Switch Model Profile"
+      }
+    ],
+    "configuration": {
+      "title": "GSD",
+      "properties": {
+        "gsd.modelProfile": {
+          "type": "string",
+          "default": "balanced",
+          "enum": [
+            "quality",
+            "balanced",
+            "budget"
+          ],
+          "description": "Model profile for GSD operations"
+        },
+        "gsd.workflow.research": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable research phase in workflow"
+        },
+        "gsd.workflow.planCheck": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable plan checking in workflow"
+        },
+        "gsd.workflow.verifier": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable post-execution verification"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.99.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.0",
+    "@vscode/test-electron": "^2.3.0"
+  }
+}

@@ -3,7 +3,8 @@
   "version": "1.20.6",
   "description": "A meta-prompting, context engineering and spec-driven development system for Claude Code, OpenCode, Gemini and Codex by TÂCHES.",
   "bin": {
-    "get-shit-done-cc": "bin/install.js"
+    "get-shit-done-cc": "bin/install.js",
+    "gsd-copilot": "bin/copilot-install.js"
   },
   "files": [
     "bin",
@@ -11,7 +12,11 @@
     "get-shit-done",
     "agents",
     "hooks/dist",
-    "scripts"
+    "scripts",
+    ".gsd",
+    ".github",
+    "docs",
+    "extension"
   ],
   "keywords": [
     "claude",
@@ -23,7 +28,11 @@
     "gemini",
     "gemini-cli",
     "codex",
-    "codex-cli"
+    "codex-cli",
+    "vscode",
+    "copilot",
+    "github-copilot",
+    "mcp"
   ],
   "author": "TÂCHES",
   "license": "MIT",
@@ -45,6 +54,11 @@
   "scripts": {
     "build:hooks": "node scripts/build-hooks.js",
     "prepublishOnly": "npm run build:hooks",
-    "test": "node --test tests/*.test.cjs"
+    "test": "node --test tests/*.test.cjs",
+    "test:copilot": "node --test tests/copilot-*.test.cjs",
+    "ext:package": "node scripts/package-extension.js",
+    "ext:package:minor": "node scripts/package-extension.js --minor",
+    "ext:package:major": "node scripts/package-extension.js --major",
+    "test:live": "node .my/LiveTests/run-live-tests.cjs"
   }
 }

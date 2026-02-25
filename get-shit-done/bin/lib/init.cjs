@@ -139,19 +139,19 @@ function cmdInitPlanPhase(cwd, phase, raw) {
       const files = fs.readdirSync(phaseDirFull);
       const contextFile = files.find(f => f.endsWith('-CONTEXT.md') || f === 'CONTEXT.md');
       if (contextFile) {
-        result.context_path = path.join(phaseInfo.directory, contextFile);
+        result.context_path = path.join(phaseInfo.directory, contextFile).replace(/\\/g, '/');
       }
       const researchFile = files.find(f => f.endsWith('-RESEARCH.md') || f === 'RESEARCH.md');
       if (researchFile) {
-        result.research_path = path.join(phaseInfo.directory, researchFile);
+        result.research_path = path.join(phaseInfo.directory, researchFile).replace(/\\/g, '/');
       }
       const verificationFile = files.find(f => f.endsWith('-VERIFICATION.md') || f === 'VERIFICATION.md');
       if (verificationFile) {
-        result.verification_path = path.join(phaseInfo.directory, verificationFile);
+        result.verification_path = path.join(phaseInfo.directory, verificationFile).replace(/\\/g, '/');
       }
       const uatFile = files.find(f => f.endsWith('-UAT.md') || f === 'UAT.md');
       if (uatFile) {
-        result.uat_path = path.join(phaseInfo.directory, uatFile);
+        result.uat_path = path.join(phaseInfo.directory, uatFile).replace(/\\/g, '/');
       }
     } catch {}
   }
@@ -422,19 +422,19 @@ function cmdInitPhaseOp(cwd, phase, raw) {
       const files = fs.readdirSync(phaseDirFull);
       const contextFile = files.find(f => f.endsWith('-CONTEXT.md') || f === 'CONTEXT.md');
       if (contextFile) {
-        result.context_path = path.join(phaseInfo.directory, contextFile);
+        result.context_path = path.join(phaseInfo.directory, contextFile).replace(/\\/g, '/');
       }
       const researchFile = files.find(f => f.endsWith('-RESEARCH.md') || f === 'RESEARCH.md');
       if (researchFile) {
-        result.research_path = path.join(phaseInfo.directory, researchFile);
+        result.research_path = path.join(phaseInfo.directory, researchFile).replace(/\\/g, '/');
       }
       const verificationFile = files.find(f => f.endsWith('-VERIFICATION.md') || f === 'VERIFICATION.md');
       if (verificationFile) {
-        result.verification_path = path.join(phaseInfo.directory, verificationFile);
+        result.verification_path = path.join(phaseInfo.directory, verificationFile).replace(/\\/g, '/');
       }
       const uatFile = files.find(f => f.endsWith('-UAT.md') || f === 'UAT.md');
       if (uatFile) {
-        result.uat_path = path.join(phaseInfo.directory, uatFile);
+        result.uat_path = path.join(phaseInfo.directory, uatFile).replace(/\\/g, '/');
       }
     } catch {}
   }

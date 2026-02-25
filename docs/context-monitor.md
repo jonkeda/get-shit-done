@@ -1,5 +1,7 @@
 # Context Window Monitor
 
+> **Note:** This document describes the Claude Code context monitoring system. For VS Code / Copilot users, context monitoring is handled by the Copilot hooks system in `.gsd/hooks/`. See `.github/copilot-instructions.md` for details.
+
 A PostToolUse hook that warns the agent when context window usage is high.
 
 ## Problem
