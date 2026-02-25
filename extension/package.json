@@ -57,6 +57,10 @@
       {
         "command": "gsd.switchProfile",
         "title": "GSD: Switch Model Profile"
+      },
+      {
+        "command": "gsd.updateWorkspace",
+        "title": "GSD: Update Workspace"
       }
     ],
     "mcpServerDefinitionProviders": [

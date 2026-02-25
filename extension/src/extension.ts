@@ -65,9 +65,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Install or update GSD tooling for each workspace folder.
   // Fire-and-forget: version check inside installer handles idempotency (UPDATE-01..04, MCP-02).
   for (const workspaceFolder of vscode.workspace.workspaceFolders ?? []) {
-    installToWorkspace(context, workspaceFolder).catch((err) => {
-      console.error('[GSD] Install error:', err);
-    });
+    installToWorkspace(context, workspaceFolder)
+      .then((result) => {
+        if (result.installed) {
+          const verb = result.updated ? 'updated' : 'installed';
+          vscode.window.showInformationMessage(
+            `GSD workspace ${verb} — ${result.filesWritten} files written`,
+          );
+        }
+      })
+      .catch((err) => {
+        console.error('[GSD] Install error:', err);
+      });
   }
 }
 

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { installToWorkspace } from './installer';
 
 function openCopilotChat(query: string): void {
   vscode.commands.executeCommand('workbench.action.chat.open', { query });
@@ -57,6 +58,21 @@ export function registerCommands(context: vscode.ExtensionContext): void {
       );
       if (profile) {
         openCopilotChat(`/gsd-set-profile ${profile.label}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('gsd.updateWorkspace', async () => {
+      const folders = vscode.workspace.workspaceFolders ?? [];
+      if (folders.length === 0) {
+        vscode.window.showWarningMessage('GSD: No workspace folder open');
+        return;
+      }
+      for (const folder of folders) {
+        const result = await installToWorkspace(context, folder, { force: true });
+        const verb = result.updated ? 'updated' : 'installed';
+        vscode.window.showInformationMessage(
+          `GSD workspace ${verb} — ${result.filesWritten} files written`,
+        );
       }
     }),
   );
