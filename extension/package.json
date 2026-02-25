@@ -12,7 +12,7 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "workspaceContains:.planning/STATE.md"
+    "onStartupFinished"
   ],
   "contributes": {
     "viewsContainers": {
