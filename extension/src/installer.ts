@@ -219,3 +219,150 @@ function installGsdContent(assetsGsd: string, workspacePath: string): number {
   );
   return count;
 }
+
+// ── Config merges ─────────────────────────────────────────────────────────────
+
+/**
+ * Merge the bundled GSD section into `.github/copilot-instructions.md`.
+ *
+ * - If the file does not exist: create it containing only the GSD section.
+ * - If the file exists with GSD markers: replace the content between them.
+ * - If the file exists without markers: append the GSD section at the end.
+ */
+function mergeCopilotInstructions(assetsGithub: string, workspacePath: string): number {
+  const srcPath = path.join(assetsGithub, 'copilot-instructions.md');
+  if (!fs.existsSync(srcPath)) {
+    return 0;
+  }
+  const destPath = path.join(workspacePath, '.github', 'copilot-instructions.md');
+  const gsdContent = fs.readFileSync(srcPath, 'utf8');
+  const gsdSection = `${GSD_BEGIN}\n${gsdContent.trim()}\n${GSD_END}`;
+
+  if (fs.existsSync(destPath)) {
+    const existing = fs.readFileSync(destPath, 'utf8');
+    const beginIdx = existing.indexOf(GSD_BEGIN);
+    const endIdx = existing.indexOf(GSD_END);
+    if (beginIdx !== -1 && endIdx !== -1 && endIdx > beginIdx) {
+      const newContent =
+        existing.substring(0, beginIdx) +
+        gsdSection +
+        existing.substring(endIdx + GSD_END.length);
+      fs.writeFileSync(destPath, newContent, 'utf8');
+    } else {
+      const sep = existing.endsWith('\n') ? '\n' : '\n\n';
+      fs.writeFileSync(destPath, existing + sep + gsdSection + '\n', 'utf8');
+    }
+  } else {
+    ensureDir(path.dirname(destPath));
+    fs.writeFileSync(destPath, gsdSection + '\n', 'utf8');
+  }
+  return 1;
+}
+
+/**
+ * Write (or update) `.vscode/mcp.json` with the GSD MCP server entry.
+ *
+ * Existing MCP server entries are preserved. The `gsd-tools` key is
+ * added or replaced. `${workspaceFolder}` variables are written as
+ * literal strings — VS Code resolves them at runtime.
+ */
+function writeMcpJson(workspacePath: string): number {
+  const mcpFile = path.join(workspacePath, '.vscode', 'mcp.json');
+  const gsdServer = {
+    type: 'stdio',
+    command: 'node',
+    // eslint-disable-next-line no-template-curly-in-string
+    args: ['${workspaceFolder}/.gsd/tools/gsd-mcp-server.js'],
+    // eslint-disable-next-line no-template-curly-in-string
+    env: { GSD_WORKSPACE: '${workspaceFolder}' },
+  };
+
+  let mcpConfig: Record<string, unknown> = {};
+  if (fs.existsSync(mcpFile)) {
+    try {
+      mcpConfig = JSON.parse(fs.readFileSync(mcpFile, 'utf8')) as Record<string, unknown>;
+    } catch {
+      // Malformed file — overwrite with a clean config
+    }
+  }
+  if (
+    !mcpConfig.servers ||
+    typeof mcpConfig.servers !== 'object' ||
+    Array.isArray(mcpConfig.servers)
+  ) {
+    mcpConfig.servers = {};
+  }
+  (mcpConfig.servers as Record<string, unknown>)[MCP_SERVER_KEY] = gsdServer;
+  ensureDir(path.dirname(mcpFile));
+  fs.writeFileSync(mcpFile, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf8');
+  return 1;
+}
+
+/**
+ * Ensure `.gsd/` is listed in the workspace `.gitignore`.
+ * Creates the file if it does not exist. Does nothing if the entry is already present.
+ */
+function updateGitignore(workspacePath: string): void {
+  const gitignorePath = path.join(workspacePath, '.gitignore');
+  const gsdEntry = '.gsd/';
+
+  if (fs.existsSync(gitignorePath)) {
+    const existing = fs.readFileSync(gitignorePath, 'utf8');
+    const lines = existing.split('\n').map((l) => l.trim());
+    if (lines.includes(gsdEntry) || lines.includes(gsdEntry.replace(/\/$/, ''))) {
+      return;
+    }
+    const sep = existing.endsWith('\n') ? '' : '\n';
+    fs.writeFileSync(gitignorePath, existing + sep + gsdEntry + '\n', 'utf8');
+  } else {
+    fs.writeFileSync(gitignorePath, gsdEntry + '\n', 'utf8');
+  }
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
+/**
+ * Install or update GSD tooling in the given workspace folder.
+ *
+ * Checks `.gsd/VERSION` against the current extension version. If the versions
+ * match, skips the install unless `options.force` is true.
+ *
+ * Operations performed:
+ *  1. Copy agent customisation files to `.github/`
+ *  2. Merge GSD section into `.github/copilot-instructions.md`
+ *  3. Copy `.gsd/` tools, references, and templates
+ *  4. Write/update `.vscode/mcp.json`
+ *  5. Ensure `.gsd/` is in `.gitignore`
+ *  6. Write `.gsd/VERSION`
+ */
+export async function installToWorkspace(
+  context: vscode.ExtensionContext,
+  folder: vscode.WorkspaceFolder,
+  options?: InstallOptions,
+): Promise<InstallResult> {
+  const workspacePath = folder.uri.fsPath;
+  const assetsRoot = path.join(context.extensionUri.fsPath, 'assets');
+  const assetsGithub = path.join(assetsRoot, 'github');
+  const assetsGsd = path.join(assetsRoot, 'gsd');
+
+  const extVersion = getExtensionVersion(context);
+  const installedVersion = getInstalledVersion(workspacePath);
+
+  if (installedVersion === extVersion && !options?.force) {
+    return { installed: false, updated: false, filesWritten: 0 };
+  }
+
+  let filesWritten = 0;
+  filesWritten += installGithubFiles(assetsGithub, workspacePath);
+  filesWritten += mergeCopilotInstructions(assetsGithub, workspacePath);
+  filesWritten += installGsdContent(assetsGsd, workspacePath);
+  filesWritten += writeMcpJson(workspacePath);
+  updateGitignore(workspacePath);
+  writeVersion(workspacePath, extVersion);
+
+  return {
+    installed: true,
+    updated: installedVersion !== null,
+    filesWritten,
+  };
+}
