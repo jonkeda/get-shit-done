@@ -48,6 +48,41 @@ function run(cmd, cmdArgs, opts = {}) {
   }
 }
 
+// --- Helpers for asset copy ---
+
+function copyMatchingFiles(srcDir, destDir, prefix, suffix) {
+  if (!fs.existsSync(srcDir)) { warn(`Asset source missing: ${srcDir}`); return 0; }
+  fs.mkdirSync(destDir, { recursive: true });
+  let count = 0;
+  for (const f of fs.readdirSync(srcDir)) {
+    if (prefix && !f.startsWith(prefix)) continue;
+    if (suffix && !f.endsWith(suffix)) continue;
+    const stat = fs.statSync(path.join(srcDir, f));
+    if (!stat.isFile()) continue;
+    fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f));
+    count++;
+  }
+  return count;
+}
+
+function copyDirRecursive(src, dest) {
+  if (!fs.existsSync(src)) { warn(`Asset source missing: ${src}`); return 0; }
+  fs.mkdirSync(dest, { recursive: true });
+  let count = 0;
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    if (entry.name === '.gitkeep') continue;
+    const s = path.join(src, entry.name);
+    const d = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      count += copyDirRecursive(s, d);
+    } else {
+      fs.copyFileSync(s, d);
+      count++;
+    }
+  }
+  return count;
+}
+
 // --- 1. Bump version ---
 log(`Bumping ${bumpType} version...`);
 const extPkg = JSON.parse(fs.readFileSync(EXT_PKG_PATH, 'utf8'));
@@ -96,6 +131,95 @@ for (const f of fs.readdirSync(path.join(mcpSrc, 'lib'))) {
   }
 }
 ok('MCP server copied to extension/mcp-server/');
+
+// --- 3.5. Copy GSD content assets into extension/assets/ ---
+log('Copying GSD content assets...');
+{
+  const ASSETS_DIR = path.join(EXT_DIR, 'assets');
+  const GITHUB_SRC = path.join(ROOT, '.github');
+  const GSD_SRC = path.join(ROOT, '.gsd');
+
+  // Clean previous assets
+  if (fs.existsSync(ASSETS_DIR)) {
+    fs.rmSync(ASSETS_DIR, { recursive: true, force: true });
+  }
+
+  // .github/agents/gsd-*.agent.md
+  const agentCount = copyMatchingFiles(
+    path.join(GITHUB_SRC, 'agents'),
+    path.join(ASSETS_DIR, 'github', 'agents'),
+    'gsd-', '.agent.md',
+  );
+
+  // .github/skills/gsd-*/ (recursive)
+  let skillCount = 0;
+  const skillsSrc = path.join(GITHUB_SRC, 'skills');
+  const skillsDest = path.join(ASSETS_DIR, 'github', 'skills');
+  if (fs.existsSync(skillsSrc)) {
+    for (const entry of fs.readdirSync(skillsSrc, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !entry.name.startsWith('gsd-')) continue;
+      copyDirRecursive(path.join(skillsSrc, entry.name), path.join(skillsDest, entry.name));
+      skillCount++;
+    }
+  }
+
+  // .github/prompts/gsd-*.prompt.md
+  const promptCount = copyMatchingFiles(
+    path.join(GITHUB_SRC, 'prompts'),
+    path.join(ASSETS_DIR, 'github', 'prompts'),
+    'gsd-', '.prompt.md',
+  );
+
+  // .github/instructions/gsd-*.instructions.md
+  const instrCount = copyMatchingFiles(
+    path.join(GITHUB_SRC, 'instructions'),
+    path.join(ASSETS_DIR, 'github', 'instructions'),
+    'gsd-', '.instructions.md',
+  );
+
+  // .github/copilot-instructions.md
+  const ciSrc = path.join(GITHUB_SRC, 'copilot-instructions.md');
+  if (fs.existsSync(ciSrc)) {
+    fs.mkdirSync(path.join(ASSETS_DIR, 'github'), { recursive: true });
+    fs.copyFileSync(ciSrc, path.join(ASSETS_DIR, 'github', 'copilot-instructions.md'));
+  }
+
+  // .gsd/tools/ — JS files only (gsd-mcp-server.js + lib/*.js)
+  const toolSrc = path.join(GSD_SRC, 'tools');
+  const toolDest = path.join(ASSETS_DIR, 'gsd', 'tools');
+  let toolLibCount = 0;
+  if (fs.existsSync(toolSrc)) {
+    fs.mkdirSync(path.join(toolDest, 'lib'), { recursive: true });
+    const serverSrc = path.join(toolSrc, 'gsd-mcp-server.js');
+    if (fs.existsSync(serverSrc)) {
+      fs.copyFileSync(serverSrc, path.join(toolDest, 'gsd-mcp-server.js'));
+    }
+    const libSrc = path.join(toolSrc, 'lib');
+    if (fs.existsSync(libSrc)) {
+      for (const f of fs.readdirSync(libSrc)) {
+        if (!f.endsWith('.js')) continue;
+        fs.copyFileSync(path.join(libSrc, f), path.join(toolDest, 'lib', f));
+        toolLibCount++;
+      }
+    }
+  }
+
+  // .gsd/references/ and .gsd/templates/ (recursive)
+  const refCount = copyDirRecursive(
+    path.join(GSD_SRC, 'references'),
+    path.join(ASSETS_DIR, 'gsd', 'references'),
+  );
+  const tplCount = copyDirRecursive(
+    path.join(GSD_SRC, 'templates'),
+    path.join(ASSETS_DIR, 'gsd', 'templates'),
+  );
+
+  ok(
+    `GSD assets: ${agentCount} agents, ${skillCount} skills, ${promptCount} prompts, ` +
+    `${instrCount} instructions, tools(${toolLibCount} lib), ` +
+    `${refCount} refs, ${tplCount} templates`,
+  );
+}
 
 // --- 4. Compile TypeScript ---
 log('Compiling TypeScript...');
