@@ -2,7 +2,7 @@
   "name": "gsd-copilot",
   "displayName": "GSD - Get Shit Done",
   "description": "Status bar, tree view, and command palette integration for GSD workflow",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "publisher": "gsd",
   "engines": {
     "vscode": "^1.99.0"

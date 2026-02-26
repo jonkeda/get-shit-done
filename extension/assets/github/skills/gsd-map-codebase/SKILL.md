@@ -5,11 +5,18 @@ description: "Analyze existing codebase and produce structured documentation in 
 
 # Map Codebase Skill
 
-Analyze existing codebase using parallel codebase-mapper agent invocations to produce structured documents in `.planning/codebase/`.
+Analyze existing codebase using parallel codebase-mapper agent invocations to produce structured documents in `.planning/codebase/` (or a named subdirectory when `--output <name>` is provided).
 
 Each mapper call explores a focus area and writes documents directly. The orchestrator receives confirmations and verifies output.
 
-**Output:** `.planning/codebase/` folder with 7 structured documents about the codebase state.
+**Output:** `.planning/codebase/` folder (or `.planning/codebase/<name>/` with `--output <name>`) with 7 structured documents about the codebase state.
+
+**Multi-codebase projects:** Use `--output <name>` to write each codebase map to its own subdirectory and avoid overwrites. Example:
+```
+/gsd-map-codebase Focus on Bouw7/ --output bouw7
+/gsd-map-codebase Focus on Exact-Online/ --output exact-online
+/gsd-map-codebase Focus on Exact-Construction/ --output exact-construction
+```
 
 **When to use:**
 - Brownfield projects before `/gsd-new-project` (understand existing code first)
@@ -24,6 +31,14 @@ Each mapper call explores a focus area and writes documents directly. The orches
 ## Steps
 
 ### 1. Check preconditions
+
+**Resolve output directory:**
+
+Parse the user's argument for an `--output <name>` flag:
+- If `--output <name>` is present, set `outputDir = .planning/codebase/<name>` (strip `--output <name>` from the focus description passed to mapper agents)
+- If not present, set `outputDir = .planning/codebase`
+
+Use `{outputDir}` for all file paths in the steps below.
 
 Set up progress tracking:
 
@@ -41,7 +56,7 @@ use_tool(manage_todo_list, {
 })
 ```
 
-Check if `.planning/codebase/` already has files.
+Check if `{outputDir}` already has files.
 
 **If files exist:**
 
@@ -49,7 +64,7 @@ Check if `.planning/codebase/` already has files.
 use_tool(vscode_askQuestions, {
   questions: [{
     header: "Existing Map",
-    question: ".planning/codebase/ already exists. What would you like to do?",
+    question: "{outputDir} already exists. What would you like to do?",
     options: [
       { label: "Refresh", description: "Delete existing and remap codebase" },
       { label: "Update", description: "Keep existing, only update specific documents" },
@@ -72,16 +87,16 @@ use_tool(manage_todo_list, { todos: [{ id: "check", status: "complete" }] })
 
 ### 2. Create codebase directory
 
-Create `.planning/codebase/` directory.
+Create `{outputDir}` directory.
 
 **Expected output files:**
-- `STACK.md` (from tech mapper)
-- `INTEGRATIONS.md` (from tech mapper)
-- `ARCHITECTURE.md` (from arch mapper)
-- `STRUCTURE.md` (from arch mapper)
-- `CONVENTIONS.md` (from quality mapper)
-- `TESTING.md` (from quality mapper)
-- `CONCERNS.md` (from concerns mapper)
+- `{outputDir}/STACK.md` (from tech mapper)
+- `{outputDir}/INTEGRATIONS.md` (from tech mapper)
+- `{outputDir}/ARCHITECTURE.md` (from arch mapper)
+- `{outputDir}/STRUCTURE.md` (from arch mapper)
+- `{outputDir}/CONVENTIONS.md` (from quality mapper)
+- `{outputDir}/TESTING.md` (from quality mapper)
+- `{outputDir}/CONCERNS.md` (from concerns mapper)
 
 ### 3. Execute 4 codebase-mapper calls
 
@@ -98,9 +113,9 @@ use_tool(manage_todo_list, { todos: [{ id: "tech", status: "in_progress" }] })
 
 Acting as the codebase-mapper with focus=tech:
 - Analyze technology stack and external integrations
-- Write `.planning/codebase/STACK.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/STACK.md`
-- Write `.planning/codebase/INTEGRATIONS.md`
-- Report: "Tech mapping complete: STACK.md ({N} lines), INTEGRATIONS.md ({N} lines)"
+- Write `{outputDir}/STACK.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/STACK.md`
+- Write `{outputDir}/INTEGRATIONS.md`
+- Report: "Tech mapping complete: {outputDir}/STACK.md ({N} lines), {outputDir}/INTEGRATIONS.md ({N} lines)"
 
 ```
 use_tool(manage_todo_list, { todos: [{ id: "tech", status: "complete" }] })
@@ -115,9 +130,9 @@ use_tool(manage_todo_list, { todos: [{ id: "arch", status: "in_progress" }] })
 
 Acting as the codebase-mapper with focus=arch:
 - Analyze architecture patterns and directory structure
-- Write `.planning/codebase/ARCHITECTURE.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/ARCHITECTURE.md`
-- Write `.planning/codebase/STRUCTURE.md`
-- Report: "Architecture mapping complete: ARCHITECTURE.md ({N} lines), STRUCTURE.md ({N} lines)"
+- Write `{outputDir}/ARCHITECTURE.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/ARCHITECTURE.md`
+- Write `{outputDir}/STRUCTURE.md`
+- Report: "Architecture mapping complete: {outputDir}/ARCHITECTURE.md ({N} lines), {outputDir}/STRUCTURE.md ({N} lines)"
 
 ```
 use_tool(manage_todo_list, { todos: [{ id: "arch", status: "complete" }] })
@@ -132,9 +147,9 @@ use_tool(manage_todo_list, { todos: [{ id: "quality", status: "in_progress" }] }
 
 Acting as the codebase-mapper with focus=quality:
 - Analyze coding conventions and testing patterns
-- Write `.planning/codebase/CONVENTIONS.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/CONVENTIONS.md`
-- Write `.planning/codebase/TESTING.md`
-- Report: "Quality mapping complete: CONVENTIONS.md ({N} lines), TESTING.md ({N} lines)"
+- Write `{outputDir}/CONVENTIONS.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/CONVENTIONS.md`
+- Write `{outputDir}/TESTING.md`
+- Report: "Quality mapping complete: {outputDir}/CONVENTIONS.md ({N} lines), {outputDir}/TESTING.md ({N} lines)"
 
 ```
 use_tool(manage_todo_list, { todos: [{ id: "quality", status: "complete" }] })
@@ -149,8 +164,8 @@ use_tool(manage_todo_list, { todos: [{ id: "concerns", status: "in_progress" }] 
 
 Acting as the codebase-mapper with focus=concerns:
 - Analyze technical debt, known issues, areas of concern
-- Write `.planning/codebase/CONCERNS.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/CONCERNS.md`
-- Report: "Concerns mapping complete: CONCERNS.md ({N} lines)"
+- Write `{outputDir}/CONCERNS.md` using template at `.github/skills/gsd-map-codebase/templates/codebase/CONCERNS.md`
+- Report: "Concerns mapping complete: {outputDir}/CONCERNS.md ({N} lines)"
 
 ```
 use_tool(manage_todo_list, { todos: [{ id: "concerns", status: "complete" }] })
@@ -164,13 +179,13 @@ use_tool(manage_todo_list, { todos: [{ id: "verify", status: "in_progress" }] })
 ```
 
 Verify all 7 documents exist and are non-empty (each should have >20 lines):
-- `.planning/codebase/STACK.md`
-- `.planning/codebase/INTEGRATIONS.md`
-- `.planning/codebase/ARCHITECTURE.md`
-- `.planning/codebase/STRUCTURE.md`
-- `.planning/codebase/CONVENTIONS.md`
-- `.planning/codebase/TESTING.md`
-- `.planning/codebase/CONCERNS.md`
+- `{outputDir}/STACK.md`
+- `{outputDir}/INTEGRATIONS.md`
+- `{outputDir}/ARCHITECTURE.md`
+- `{outputDir}/STRUCTURE.md`
+- `{outputDir}/CONVENTIONS.md`
+- `{outputDir}/TESTING.md`
+- `{outputDir}/CONCERNS.md`
 
 If any are missing or empty, note which focus areas may have failed and report.
 
@@ -192,15 +207,15 @@ use_tool(manage_todo_list, { todos: [{ id: "commit", status: "in_progress" }] })
 
 ```
 use_tool(gsd_commit, {
-  message: "docs: map existing codebase",
+  message: "docs: map {outputDir} codebase",  // use subdirectory name in message when --output was provided, e.g. "docs: map bouw7 codebase"
   files: [
-    ".planning/codebase/STACK.md",
-    ".planning/codebase/INTEGRATIONS.md",
-    ".planning/codebase/ARCHITECTURE.md",
-    ".planning/codebase/STRUCTURE.md",
-    ".planning/codebase/CONVENTIONS.md",
-    ".planning/codebase/TESTING.md",
-    ".planning/codebase/CONCERNS.md"
+    "{outputDir}/STACK.md",
+    "{outputDir}/INTEGRATIONS.md",
+    "{outputDir}/ARCHITECTURE.md",
+    "{outputDir}/STRUCTURE.md",
+    "{outputDir}/CONVENTIONS.md",
+    "{outputDir}/TESTING.md",
+    "{outputDir}/CONCERNS.md"
   ]
 })
 ```
@@ -215,7 +230,7 @@ use_tool(manage_todo_list, { todos: [{ id: "commit", status: "complete" }] })
 ```
 Codebase mapping complete.
 
-Created .planning/codebase/:
+Created {outputDir}/:
 - STACK.md ({N} lines) - Technologies and dependencies
 - ARCHITECTURE.md ({N} lines) - System design and patterns
 - STRUCTURE.md ({N} lines) - Directory layout and organization

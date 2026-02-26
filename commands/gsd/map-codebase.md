@@ -1,7 +1,7 @@
 ---
 name: gsd:map-codebase
 description: Analyze codebase with parallel mapper agents to produce .planning/codebase/ documents
-argument-hint: "[optional: specific area to map, e.g., 'api' or 'auth']"
+argument-hint: "[optional focus description] [--output <name>]"
 allowed-tools:
   - Read
   - Bash
@@ -14,9 +14,11 @@ allowed-tools:
 <objective>
 Analyze existing codebase using parallel gsd-codebase-mapper agents to produce structured codebase documents.
 
-Each mapper agent explores a focus area and **writes documents directly** to `.planning/codebase/`. The orchestrator only receives confirmations, keeping context usage minimal.
+Each mapper agent explores a focus area and **writes documents directly** to `.planning/codebase/` (or `.planning/codebase/<name>/` when `--output <name>` is given). The orchestrator only receives confirmations, keeping context usage minimal.
 
-Output: .planning/codebase/ folder with 7 structured documents about the codebase state.
+Output: .planning/codebase/ folder (or named subdirectory) with 7 structured documents about the codebase state.
+
+**Multi-codebase projects:** Pass `--output <name>` to isolate each codebase into its own subdirectory and prevent overwrites across runs.
 </objective>
 
 <execution_context>
@@ -25,6 +27,8 @@ Output: .planning/codebase/ folder with 7 structured documents about the codebas
 
 <context>
 Focus area: $ARGUMENTS (optional - if provided, tells agents to focus on specific subsystem)
+
+Use `--output <name>` in $ARGUMENTS to write to `.planning/codebase/<name>/` instead of `.planning/codebase/`. Useful when mapping multiple distinct codebases in the same project.
 
 **Load project state if exists:**
 Check for .planning/STATE.md - loads context if project already initialized

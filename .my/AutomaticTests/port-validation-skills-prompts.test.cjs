@@ -139,6 +139,44 @@ describe('Prompt Integrity', () => {
   });
 });
 
+describe('gsd-map-codebase --output flag', () => {
+  const SKILL_PATH = path.join(ROOT, '.github', 'skills', 'gsd-map-codebase', 'SKILL.md');
+  const CMD_PATH = path.join(ROOT, 'commands', 'gsd', 'map-codebase.md');
+
+  it('SKILL.md documents --output flag', () => {
+    const content = fs.readFileSync(SKILL_PATH, 'utf-8');
+    assert.ok(content.includes('--output'), 'SKILL.md missing --output flag documentation');
+  });
+
+  it('SKILL.md uses {outputDir} placeholder for all file paths', () => {
+    const content = fs.readFileSync(SKILL_PATH, 'utf-8');
+    assert.ok(content.includes('{outputDir}'), 'SKILL.md missing {outputDir} placeholder');
+    // Should NOT reference the old hardcoded path as a write target
+    assert.ok(
+      !content.includes('Write `.planning/codebase/STACK.md`'),
+      'SKILL.md still has old hardcoded .planning/codebase/STACK.md write path'
+    );
+  });
+
+  it('SKILL.md explains multi-codebase usage', () => {
+    const content = fs.readFileSync(SKILL_PATH, 'utf-8');
+    assert.ok(content.includes('Multi-codebase'), 'SKILL.md missing multi-codebase guidance');
+  });
+
+  it('command file documents --output flag', () => {
+    const content = fs.readFileSync(CMD_PATH, 'utf-8');
+    assert.ok(content.includes('--output'), 'map-codebase.md missing --output flag documentation');
+  });
+
+  it('command argument-hint includes --output', () => {
+    const content = fs.readFileSync(CMD_PATH, 'utf-8');
+    assert.ok(
+      content.includes('argument-hint') && content.includes('--output'),
+      'map-codebase.md argument-hint missing --output'
+    );
+  });
+});
+
 describe('Command Coverage', () => {
   // Every source command should have either a prompt or a skill
   const PROMPT_COMMANDS = EXPECTED_PROMPTS.map(p => p.replace('gsd-', ''));
