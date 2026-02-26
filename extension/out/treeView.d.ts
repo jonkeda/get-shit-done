@@ -11,7 +11,7 @@ export declare class GsdTreeViewProvider implements vscode.TreeDataProvider<GsdT
     private state;
     private phases;
     private watcher;
-    activate(context: vscode.ExtensionContext): void;
+    activate(context: vscode.ExtensionContext): Promise<void>;
     refresh(): Promise<void>;
     getTreeItem(element: GsdTreeItem): vscode.TreeItem;
     getChildren(element?: GsdTreeItem): Promise<GsdTreeItem[]>;

@@ -55,7 +55,13 @@ export class GsdTreeViewProvider implements vscode.TreeDataProvider<GsdTreeItem>
   private phases: RoadmapPhase[] = [];
   private watcher: vscode.FileSystemWatcher | undefined;
 
-  activate(context: vscode.ExtensionContext): void {
+  async activate(context: vscode.ExtensionContext): Promise<void> {
+    // Pre-load state so the tree view is populated on first render.
+    // Without this, VS Code calls getChildren() before the async refresh()
+    // completes, resulting in an empty tree if the panel isn't visible when
+    // the _onDidChangeTreeData event fires.
+    await this.refresh();
+
     const treeView = vscode.window.createTreeView('gsdProjectView', {
       treeDataProvider: this,
       showCollapseAll: true,
@@ -67,8 +73,6 @@ export class GsdTreeViewProvider implements vscode.TreeDataProvider<GsdTreeItem>
     this.watcher.onDidCreate(() => this.refresh());
     this.watcher.onDidDelete(() => this.refresh());
     context.subscriptions.push(this.watcher);
-
-    this.refresh();
   }
 
   async refresh(): Promise<void> {

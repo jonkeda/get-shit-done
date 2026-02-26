@@ -39,6 +39,7 @@ const vscode = __importStar(require("vscode"));
 const statusBar_1 = require("./statusBar");
 const treeView_1 = require("./treeView");
 const commands_1 = require("./commands");
+const installer_1 = require("./installer");
 let statusBar;
 async function activate(context) {
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -57,23 +58,35 @@ async function activate(context) {
     // Status bar
     statusBar = new statusBar_1.GsdStatusBar();
     statusBar.activate(context);
-    // Tree view
+    // Tree view — awaited so state is pre-loaded before first render
     const treeProvider = new treeView_1.GsdTreeViewProvider();
-    treeProvider.activate(context);
+    await treeProvider.activate(context);
     // Commands
     (0, commands_1.registerCommands)(context);
-    // Register MCP server programmatically so it's available immediately
+    // Register MCP server from bundled extension path — immediately available
+    // before any workspace file copy completes (MCP-01).
     if (folder) {
-        const mcpServerScript = vscode.Uri.joinPath(folder.uri, '.gsd', 'tools', 'gsd-mcp-server.js');
-        const scriptExists = await fileExists(mcpServerScript);
-        if (scriptExists) {
-            const serverDef = new vscode.McpStdioServerDefinition('GSD Tools', process.execPath, [mcpServerScript.fsPath], { GSD_WORKSPACE: folder.uri.fsPath });
-            context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('gsd.mcp-servers', {
-                provideMcpServerDefinitions() {
-                    return [serverDef];
-                },
-            }));
-        }
+        const bundledScript = vscode.Uri.joinPath(context.extensionUri, 'assets', 'gsd', 'tools', 'gsd-mcp-server.js');
+        const serverDef = new vscode.McpStdioServerDefinition('GSD Tools', process.execPath, [bundledScript.fsPath], { GSD_WORKSPACE: folder.uri.fsPath });
+        context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('gsd.mcp-servers', {
+            provideMcpServerDefinitions() {
+                return [serverDef];
+            },
+        }));
+    }
+    // Install or update GSD tooling for each workspace folder.
+    // Fire-and-forget: version check inside installer handles idempotency (UPDATE-01..04, MCP-02).
+    for (const workspaceFolder of vscode.workspace.workspaceFolders ?? []) {
+        (0, installer_1.installToWorkspace)(context, workspaceFolder)
+            .then((result) => {
+            if (result.installed) {
+                const verb = result.updated ? 'updated' : 'installed';
+                vscode.window.showInformationMessage(`GSD workspace ${verb} — ${result.filesWritten} files written`);
+            }
+        })
+            .catch((err) => {
+            console.error('[GSD] Install error:', err);
+        });
     }
 }
 function deactivate() {

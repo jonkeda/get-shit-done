@@ -33,9 +33,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   statusBar = new GsdStatusBar();
   statusBar.activate(context);
 
-  // Tree view
+  // Tree view — awaited so state is pre-loaded before first render
   const treeProvider = new GsdTreeViewProvider();
-  treeProvider.activate(context);
+  await treeProvider.activate(context);
 
   // Commands
   registerCommands(context);

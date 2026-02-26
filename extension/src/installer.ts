@@ -260,42 +260,31 @@ function mergeCopilotInstructions(assetsGithub: string, workspacePath: string): 
 }
 
 /**
- * Write (or update) `.vscode/mcp.json` with the GSD MCP server entry.
+ * Remove the legacy `gsd-tools` key from `.vscode/mcp.json` if present.
  *
- * Existing MCP server entries are preserved. The `gsd-tools` key is
- * added or replaced. `${workspaceFolder}` variables are written as
- * literal strings — VS Code resolves them at runtime.
+ * The MCP server is now registered programmatically by the extension itself
+ * (always-on, from bundled assets). Writing it also to `mcp.json` creates a
+ * duplicate server entry in Copilot Chat. This function cleans up any
+ * previously written entry so upgrades don't leave stale config behind.
  */
-function writeMcpJson(workspacePath: string): number {
+function cleanupMcpJson(workspacePath: string): void {
   const mcpFile = path.join(workspacePath, '.vscode', 'mcp.json');
-  const gsdServer = {
-    type: 'stdio',
-    command: 'node',
-    // eslint-disable-next-line no-template-curly-in-string
-    args: ['${workspaceFolder}/.gsd/tools/gsd-mcp-server.js'],
-    // eslint-disable-next-line no-template-curly-in-string
-    env: { GSD_WORKSPACE: '${workspaceFolder}' },
-  };
-
-  let mcpConfig: Record<string, unknown> = {};
-  if (fs.existsSync(mcpFile)) {
-    try {
-      mcpConfig = JSON.parse(fs.readFileSync(mcpFile, 'utf8')) as Record<string, unknown>;
-    } catch {
-      // Malformed file — overwrite with a clean config
-    }
+  if (!fs.existsSync(mcpFile)) { return; }
+  let mcpConfig: Record<string, unknown>;
+  try {
+    mcpConfig = JSON.parse(fs.readFileSync(mcpFile, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return; // Malformed file — leave it alone
   }
-  if (
-    !mcpConfig.servers ||
-    typeof mcpConfig.servers !== 'object' ||
-    Array.isArray(mcpConfig.servers)
-  ) {
-    mcpConfig.servers = {};
+  const servers = mcpConfig.servers;
+  if (!servers || typeof servers !== 'object' || Array.isArray(servers)) { return; }
+  if (!(MCP_SERVER_KEY in (servers as Record<string, unknown>))) { return; }
+  delete (servers as Record<string, unknown>)[MCP_SERVER_KEY];
+  // Remove empty servers object to keep the file clean
+  if (Object.keys(servers as object).length === 0) {
+    delete mcpConfig.servers;
   }
-  (mcpConfig.servers as Record<string, unknown>)[MCP_SERVER_KEY] = gsdServer;
-  ensureDir(path.dirname(mcpFile));
   fs.writeFileSync(mcpFile, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf8');
-  return 1;
 }
 
 /**
@@ -331,7 +320,7 @@ function updateGitignore(workspacePath: string): void {
  *  1. Copy agent customisation files to `.github/`
  *  2. Merge GSD section into `.github/copilot-instructions.md`
  *  3. Copy `.gsd/` tools, references, and templates
- *  4. Write/update `.vscode/mcp.json`
+ *  4. Remove legacy `gsd-tools` entry from `.vscode/mcp.json` (now registered by extension)
  *  5. Ensure `.gsd/` is in `.gitignore`
  *  6. Write `.gsd/VERSION`
  */
@@ -356,7 +345,7 @@ export async function installToWorkspace(
   filesWritten += installGithubFiles(assetsGithub, workspacePath);
   filesWritten += mergeCopilotInstructions(assetsGithub, workspacePath);
   filesWritten += installGsdContent(assetsGsd, workspacePath);
-  filesWritten += writeMcpJson(workspacePath);
+  cleanupMcpJson(workspacePath);
   updateGitignore(workspacePath);
   writeVersion(workspacePath, extVersion);
 

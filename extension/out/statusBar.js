@@ -39,7 +39,7 @@ const stateParser_1 = require("./stateParser");
 class GsdStatusBar {
     constructor() {
         this.watchers = [];
-        this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
+        this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
         this.item.command = 'gsd.progress';
         this.item.tooltip = 'Click to show GSD progress';
     }

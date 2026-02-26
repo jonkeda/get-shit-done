@@ -6,7 +6,7 @@ export class GsdStatusBar {
   private watchers: vscode.FileSystemWatcher[] = [];
 
   constructor() {
-    this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
+    this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     this.item.command = 'gsd.progress';
     this.item.tooltip = 'Click to show GSD progress';
   }

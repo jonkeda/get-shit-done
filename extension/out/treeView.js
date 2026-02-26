@@ -81,7 +81,12 @@ class GsdTreeViewProvider {
         this.state = {};
         this.phases = [];
     }
-    activate(context) {
+    async activate(context) {
+        // Pre-load state so the tree view is populated on first render.
+        // Without this, VS Code calls getChildren() before the async refresh()
+        // completes, resulting in an empty tree if the panel isn't visible when
+        // the _onDidChangeTreeData event fires.
+        await this.refresh();
         const treeView = vscode.window.createTreeView('gsdProjectView', {
             treeDataProvider: this,
             showCollapseAll: true,
@@ -92,7 +97,6 @@ class GsdTreeViewProvider {
         this.watcher.onDidCreate(() => this.refresh());
         this.watcher.onDidDelete(() => this.refresh());
         context.subscriptions.push(this.watcher);
-        this.refresh();
     }
     async refresh() {
         const folder = vscode.workspace.workspaceFolders?.[0];

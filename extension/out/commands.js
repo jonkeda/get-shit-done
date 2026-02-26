@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerCommands = registerCommands;
 const vscode = __importStar(require("vscode"));
+const installer_1 = require("./installer");
 function openCopilotChat(query) {
     vscode.commands.executeCommand('workbench.action.chat.open', { query });
 }
@@ -77,6 +78,17 @@ function registerCommands(context) {
         ], { placeHolder: 'Select model profile' });
         if (profile) {
             openCopilotChat(`/gsd-set-profile ${profile.label}`);
+        }
+    }), vscode.commands.registerCommand('gsd.updateWorkspace', async () => {
+        const folders = vscode.workspace.workspaceFolders ?? [];
+        if (folders.length === 0) {
+            vscode.window.showWarningMessage('GSD: No workspace folder open');
+            return;
+        }
+        for (const folder of folders) {
+            const result = await (0, installer_1.installToWorkspace)(context, folder, { force: true });
+            const verb = result.updated ? 'updated' : 'installed';
+            vscode.window.showInformationMessage(`GSD workspace ${verb} — ${result.filesWritten} files written`);
         }
     }));
 }
